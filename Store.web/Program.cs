@@ -31,8 +31,9 @@ namespace Store.web
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<IserviceManager, ServiceManager>();
 
-            builder.Services.AddAutoMapper(M=>M.AddProfile(new ProductProfile()));
+            builder.Services.AddAutoMapper(M => M.AddProfile(new ProductProfile(builder.Configuration)));
             var app = builder.Build();
+            app.UseStaticFiles();
             var scope = app.Services.CreateScope();
              var dbinitaializer= scope.ServiceProvider.GetRequiredService<IDbInitializer>();
             if (app.Environment.IsDevelopment())

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Shared.Dtos.Products
 {
-    public class BrandResponse
+    public class ProductResponse
     {
         public string Name { get; set; }
         public string Description { get; set; }
