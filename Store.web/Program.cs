@@ -1,12 +1,8 @@
-﻿
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Mvc;
 using Persistance;
 using Store.Domain.Contracts;
-using Store.Services;
-using Store.Services.Abstractions;
-using Store.Services.Mapping.Products;
-
+using Store.web.Extention;
+using Store.web.MedelWare;
 
 namespace Store.web
 {
@@ -16,26 +12,24 @@ namespace Store.web
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            // Add all custom application services
+            builder.Services.AddApplicationServices(builder.Configuration);
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddDbContext<Persistance.Data.Contexts.StoreDbContext>(options =>
-            {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-            });
-
-            builder.Services.AddScoped<IDbInitializer, DbInitializer>();
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped<IserviceManager, ServiceManager>();
-
-            builder.Services.AddAutoMapper(M => M.AddProfile(new ProductProfile(builder.Configuration)));
             var app = builder.Build();
+
+            // Serve static files
             app.UseStaticFiles();
-            var scope = app.Services.CreateScope();
-             var dbinitaializer= scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+
+            // Initialize database
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+                dbInitializer.InitializeAsync();
+            }
+
+            // Global error handling middleware
+            app.UseMiddleware<GlobalErrorHandlingMiddleWare>();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -43,12 +37,8 @@ namespace Store.web
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
-
             app.Run();
         }
     }

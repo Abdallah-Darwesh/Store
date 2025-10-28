@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Shared;
 using Shared.Dtos.Products;
 
 namespace Store.Services.Abstractions.Products
@@ -10,7 +11,7 @@ namespace Store.Services.Abstractions.Products
     public interface IProductService
     {
 
-        Task<IEnumerable<ProductResponse>> GetAllProductsAsync(int? brandId, int? TypeId);
+        Task<PagginationResponse<ProductResponse>> GetAllProductsAsync(ProductQueryParameters parameters);
 
         Task<ProductResponse> GetProductbyIdAsync(int id);
 
