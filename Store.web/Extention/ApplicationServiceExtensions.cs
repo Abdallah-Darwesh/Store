@@ -1,16 +1,20 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Persistance;
+using Persistance.Data.Contexts;
+using Persistance.Identity.Context;
 using Shared.ErrorModels;
 using Store.Domain.Contracts;
+using Store.Domain.Identity;
 using Store.Services;
 using Store.Services.Abstractions;
 using Store.Services.Mapping.Products;
+using Store.Services.Mapping.Orders; // ← إضافة OrderProfile namespace
 
-namespace Store.web.Extention
-
+namespace Store.Web.Extension
 {
     public static class ApplicationServiceExtensions
     {
@@ -23,19 +27,36 @@ namespace Store.web.Extention
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
-            // Database context
-            services.AddDbContext<Persistance.Data.Contexts.StoreDbContext>(options =>
+            // Main App DbContext
+            services.AddDbContext<StoreDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+
+            // Identity DbContext
+            services.AddDbContext<identityStoreDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("IdentityConnection")));
+
+            // Identity setup
+            services.AddIdentity<AppUser, IdentityRole>(options =>
             {
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
-            });
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = true;
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<identityStoreDbContext>()
+            .AddDefaultTokenProviders();
 
             // Dependency Injection setup
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IserviceManager, ServiceManager>();
 
-            // AutoMapper
-            services.AddAutoMapper(m => m.AddProfile(new ProductProfile(configuration)));
+            services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile(new ProductProfile(configuration));
+                cfg.AddProfile(new OrderProfile());
+            });
 
             // Custom model validation error response
             services.Configure<ApiBehaviorOptions>(config =>
@@ -63,4 +84,3 @@ namespace Store.web.Extention
         }
     }
 }
-
